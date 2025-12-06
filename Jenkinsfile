@@ -1,5 +1,10 @@
 pipeline {
-  agent any
+  agent {
+    docker {
+      image 'docker:24.0-dind'
+      args '--privileged -v /var/lib/docker'
+    }
+  }
 
   environment {
     IMAGE = "simple-app"
@@ -7,6 +12,16 @@ pipeline {
   }
 
   stages {
+
+    stage('Start Docker Daemon') {
+      steps {
+        sh """
+          dockerd-entrypoint.sh > /dev/null 2>&1 &
+          sleep 5
+        """
+      }
+    }
+
     stage('Checkout') {
       steps {
         checkout scm
