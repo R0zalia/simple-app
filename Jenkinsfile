@@ -16,27 +16,17 @@ pipeline {
 
     stage('Build Docker Image') {
       steps {
-        sh """
-          docker build -t ${IMAGE}:${TAG} .
-        """
+        sh '''
+          docker build -t simple-app:v${BUILD_NUMBER} .
+        '''
       }
     }
 
     stage('Deploy to Kubernetes') {
       steps {
-        sh """
-          # Install kubectl inside the Jenkins runtime container
-          echo "Installing kubectl..."
-          apt-get update -y && apt-get install -y curl
-
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x kubectl
-          mv kubectl /usr/local/bin/kubectl
-
-          echo "Kubectl installed. Deploying..."
-
-          kubectl set image deployment/simple-app simple-app=${IMAGE}:${TAG} --record
-        """
+        sh '''
+          kubectl set image deployment/simple-app simple-app=simple-app:v${BUILD_NUMBER} --record
+        '''
       }
     }
   }
