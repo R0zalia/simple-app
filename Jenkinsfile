@@ -1,10 +1,5 @@
 pipeline {
-  agent {
-    docker {
-      image 'docker:24.0-dind'
-      args '--privileged -v /var/lib/docker'
-    }
-  }
+  agent any
 
   environment {
     IMAGE = "simple-app"
@@ -12,15 +7,6 @@ pipeline {
   }
 
   stages {
-
-    stage('Start Docker Daemon') {
-      steps {
-        sh """
-          dockerd-entrypoint.sh > /dev/null 2>&1 &
-          sleep 5
-        """
-      }
-    }
 
     stage('Checkout') {
       steps {
@@ -39,6 +25,16 @@ pipeline {
     stage('Deploy to Kubernetes') {
       steps {
         sh """
+          # Install kubectl inside the Jenkins runtime container
+          echo "Installing kubectl..."
+          apt-get update -y && apt-get install -y curl
+
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          mv kubectl /usr/local/bin/kubectl
+
+          echo "Kubectl installed. Deploying..."
+
           kubectl set image deployment/simple-app simple-app=${IMAGE}:${TAG} --record
         """
       }
